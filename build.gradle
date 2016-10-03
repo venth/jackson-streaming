@@ -13,7 +13,10 @@ apply plugin: 'idea'
 apply plugin: 'java'
 
 version = "1.0"
-description = "Spock Framework - Example Project"
+description = """
+Provides additional serializers and deserializers for Jackson to easier usage lazy serialization and
+deserialization via iterators and stream
+"""
 
 // Spock works with Java 1.5 and above
 sourceCompatibility = 1.8
@@ -29,6 +32,14 @@ repositories {
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
+    def jacksonVersion = '2.8.2'
+
+    compile "com.fasterxml.jackson.core:jackson-core:$jacksonVersion"
+    compile "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+
+    // https://mvnrepository.com/artifact/uk.com.robust-it/cloning
+    compile group: 'uk.com.robust-it', name: 'cloning', version: '1.9.3'
+
     // The production code uses the SLF4J logging API at compile time
     testCompile 'org.slf4j:slf4j-api:1.7.21'
 
