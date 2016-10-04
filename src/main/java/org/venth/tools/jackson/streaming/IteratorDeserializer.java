@@ -26,7 +26,13 @@ public class IteratorDeserializer extends JsonDeserializer<Iterator<Object>> {
     @Override
     public Iterator<Object> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
         Cloner cloner = new Cloner();
+
         //XXX create or use iterator that will close in case is exhausted
-        return new DeserializingIterator(cloner.deepClone(p), cloner.deepClone(ctxt), objectDeserializer);
+        DeserializationContext clonedContext = cloner.deepClone(ctxt);
+        JsonParser clonedParser = cloner.deepClone(p);
+
+        p.skipChildren();
+
+        return new DeserializingIterator(clonedParser, clonedContext, objectDeserializer);
     }
 }

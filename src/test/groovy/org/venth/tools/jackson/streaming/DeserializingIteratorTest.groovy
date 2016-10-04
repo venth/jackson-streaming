@@ -91,6 +91,21 @@ class DeserializingIteratorTest extends Specification {
             !deserializer.hasNext()
     }
 
+    def "throws error when object is about to deserialize without objectDeserializer provided"() {
+        given: 'collection containing an object'
+            jsonParser.currentToken() >> JsonToken.START_ARRAY
+            jsonParser.hasCurrentToken() >> true
+            jsonParser.nextToken() >>> [ JsonToken.START_OBJECT, null]
+
+        and: 'iterator is initialized without object deserializer provided'
+            def deserializer = new DeserializingIterator(jsonParser, deserializationContext)
+
+        when: 'approaches object within the array'
+            ++deserializer
+        then: 'error is thrown'
+            thrown(RuntimeException)
+    }
+
     @Unroll
     def "unexpected #unexpectedToken causes parsing error"() {
         given: 'empty collection'
@@ -98,7 +113,7 @@ class DeserializingIteratorTest extends Specification {
             jsonParser.hasCurrentToken() >> true
             jsonParser.nextToken() >>> [unexpectedToken, null]
 
-        and: 'iterator initializes'
+        and: 'iterator is initialized'
             def deserializer = createIterator()
 
         when: 'iterator approaches element'

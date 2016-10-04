@@ -27,6 +27,13 @@ public class DeserializingIterator implements Iterator<Object> {
 
     public DeserializingIterator(
             JsonParser parser,
+            DeserializationContext ctx
+    ) {
+        this(parser, ctx, null);
+    }
+
+    public DeserializingIterator(
+            JsonParser parser,
             DeserializationContext ctx,
             JsonDeserializer<?> objectDeserializer
     ) {
@@ -87,7 +94,7 @@ public class DeserializingIterator implements Iterator<Object> {
 
             handlers.put(JsonToken.VALUE_STRING, () -> {
                 try {
-                    return parser.getValueAsString();
+                    return parser.getText();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -101,7 +108,7 @@ public class DeserializingIterator implements Iterator<Object> {
             });
             handlers.put(JsonToken.VALUE_NUMBER_FLOAT, () -> {
                 try {
-                    return parser.getValueAsDouble();
+                    return parser.getDoubleValue();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
