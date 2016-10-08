@@ -7,12 +7,21 @@
  * user guide available at https://docs.gradle.org/3.1/userguide/tutorial_java_projects.html
  */
 
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'pl.allegro.tech.build:axion-release-plugin:1.4.0'
+    }
+}
+
 // Apply the java plugin to add support for Java
 apply plugin: 'groovy'
 apply plugin: 'idea'
 apply plugin: 'java'
+apply plugin: 'pl.allegro.tech.build.axion-release'
 
-version = "1.0"
 description = """
 Provides additional serializers and deserializers for Jackson to easier usage lazy serialization and
 deserialization via iterators and stream
@@ -28,6 +37,12 @@ repositories {
     // You can declare any Maven/Ivy/file repository here.
     jcenter()
     mavenCentral()
+}
+
+scmVersion {
+    tag {
+        prefix = 'version'
+    }
 }
 
 // In this section you declare the dependencies for your production and test code
