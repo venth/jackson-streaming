@@ -10,7 +10,7 @@ import java.util.function.Supplier;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JavaType;
 
 /**
  * @author Venth on 02/10/2016
@@ -35,14 +35,14 @@ public class DeserializingIterator implements Iterator<Object> {
     public DeserializingIterator(
             JsonParser parser,
             DeserializationContext ctx,
-            JsonDeserializer<?> objectDeserializer
+            JavaType expectedObjectType
     ) {
         this.parser = parser;
         this.ctx = ctx;
 
         verifyIfCurrentTokenIsArrayStart(this.parser, this.ctx);
 
-        valueHandlers = new TokenValueHandlerFactory().create(this.parser, this.ctx, objectDeserializer);
+        valueHandlers = new TokenValueHandlerFactory().create(this.parser, this.ctx, expectedObjectType);
         currentToken = nextToken(this.parser);
     }
 
@@ -88,7 +88,7 @@ public class DeserializingIterator implements Iterator<Object> {
         Map<JsonToken, Supplier<Object>> create(
                 JsonParser parser,
                 DeserializationContext context,
-                JsonDeserializer<?> objectDeserializer
+                JavaType expectedObjectType
         ) {
             HashMap<JsonToken, Supplier<Object>> handlers = new HashMap<>();
 
@@ -119,7 +119,15 @@ public class DeserializingIterator implements Iterator<Object> {
 
             handlers.put(JsonToken.START_OBJECT, () -> {
                 try {
-                    return objectDeserializer.deserialize(parser, context);
+                    return context.readValue(parser, expectedObjectType);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            handlers.put(JsonToken.START_ARRAY, () -> {
+                try {
+                    return context.readValue(parser, expectedObjectType);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.rits.cloning.Cloner;
@@ -13,14 +14,14 @@ import com.rits.cloning.Cloner;
  */
 public class IteratorDeserializer extends JsonDeserializer<Iterator<Object>> {
 
-    private JsonDeserializer<?> objectDeserializer;
+    private final TypeReference<?> expectedObjectType;
 
     public IteratorDeserializer() {
-        this(null);
+        expectedObjectType = new TypeReference<Object>() {};
     }
 
-    public IteratorDeserializer(JsonDeserializer<?> objectDeserializer) {
-        this.objectDeserializer = objectDeserializer;
+    public IteratorDeserializer(TypeReference<?> expectedObjectType) {
+        this.expectedObjectType = expectedObjectType;
     }
 
     @Override
@@ -33,6 +34,6 @@ public class IteratorDeserializer extends JsonDeserializer<Iterator<Object>> {
 
         p.skipChildren();
 
-        return new DeserializingIterator(clonedParser, clonedContext, objectDeserializer);
+        return new DeserializingIterator(clonedParser, clonedContext, ctxt.constructType(expectedObjectType.getType()));
     }
 }

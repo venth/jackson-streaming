@@ -5,7 +5,7 @@ import java.util.function.Supplier
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
 import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonDeserializer
+import com.fasterxml.jackson.databind.JavaType
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -43,23 +43,50 @@ class DeserializingIteratorTest extends Specification {
             deserialized == element
     }
 
-    def "deserializes objects via object deserializer"() {
+    def "deserializes objects via delegated object deserializer"() {
         given: 'content contains array with one object within'
             jsonParser.currentToken() >> JsonToken.START_ARRAY
             jsonParser.hasCurrentToken() >> true
             def elementType = JsonToken.START_OBJECT
             def objectElement = new Object()
             jsonParser.nextToken() >>> [elementType, null ]
-            objectDeserializer.deserialize(jsonParser ,deserializationContext) >> objectElement
+
+        and: 'object type is ObjectToDeserialize'
+            def objectType = Mock(JavaType)
+
+            deserializationContext.readValue(jsonParser, objectType)  >> objectElement
 
         and: 'deserializng iterator is created'
-            def deserializingIterator = createIterator()
+            def deserializingIterator = createIterator(objectType)
 
         when: 'iterator approaches object element'
             def deserialized = ++deserializingIterator
 
         then: 'object is deserialized'
             deserialized == objectElement
+    }
+
+    def "treats embedded array as yet another object to deserialize"() {
+        given: 'content contains array with one array within'
+            jsonParser.currentToken() >> JsonToken.START_ARRAY
+            jsonParser.hasCurrentToken() >> true
+            def elementType = JsonToken.START_ARRAY
+            def arrayElement = Mock(List)
+            jsonParser.nextToken() >>> [elementType, null ]
+
+        and: 'array type is List'
+            def arrayType = Mock(JavaType)
+
+            deserializationContext.readValue(jsonParser, arrayType)  >> arrayElement
+
+        and: 'deserializng iterator is created'
+            def deserializingIterator = createIterator(arrayType)
+
+        when: 'iterator approaches object element'
+            def deserialized = ++deserializingIterator
+
+        then: 'object is deserialized'
+            deserialized == arrayElement
     }
 
     @Unroll
@@ -91,21 +118,6 @@ class DeserializingIteratorTest extends Specification {
             !deserializer.hasNext()
     }
 
-    def "throws error when object is about to deserialize without objectDeserializer provided"() {
-        given: 'collection containing an object'
-            jsonParser.currentToken() >> JsonToken.START_ARRAY
-            jsonParser.hasCurrentToken() >> true
-            jsonParser.nextToken() >>> [ JsonToken.START_OBJECT, null]
-
-        and: 'iterator is initialized without object deserializer provided'
-            def deserializer = new DeserializingIterator(jsonParser, deserializationContext)
-
-        when: 'approaches object within the array'
-            ++deserializer
-        then: 'error is thrown'
-            thrown(RuntimeException)
-    }
-
     @Unroll
     def "unexpected #unexpectedToken causes parsing error"() {
         given: 'empty collection'
@@ -130,15 +142,16 @@ class DeserializingIteratorTest extends Specification {
 
     def deserializationContext = Mock(DeserializationContext)
 
-    def objectDeserializer = Mock(JsonDeserializer)
-
     private static List<JsonToken> allTokensBut(JsonToken ... exceptionTokens) {
         exceptionTokens = exceptionTokens ?: [] as JsonToken[]
         return JsonToken.values().findAll { token -> !exceptionTokens.contains(token) }
     }
 
-    private DeserializingIterator createIterator() {
-        new DeserializingIterator(jsonParser, deserializationContext, objectDeserializer)
+    private DeserializingIterator createIterator(JavaType objectType) {
+        new DeserializingIterator(jsonParser, deserializationContext, objectType)
     }
 
+    private DeserializingIterator createIterator() {
+        createIterator(null)
+    }
 }
